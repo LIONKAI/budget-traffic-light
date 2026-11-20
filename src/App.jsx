@@ -1,127 +1,102 @@
-import { useState, useMemo } from 'react';
-import { initialData } from './data/mockData';
-import { useLocalStorage } from './hooks/useLocalStorage';
-import { calcularPorcentaje, getEstadoSemaforo } from './utils/semaforo';
-import Dashboard from './components/Dashboard';
-import HistorialGastos from './components/HistorialGastos';
-import FormularioGasto from './components/FormularioGasto';
-import EditarGastoModal from './components/EditarGastoModal';
-import GlowOverlay from './components/GlowOverlay';
-import PrediccionRK from './components/PrediccionRK';
+import React, { useEffect, useMemo, useState } from 'react';
+import { cargarDatos, cargarParametros, guardarDatos, guardarParametros, borrarDatos, borrarParametros, datosOficiales } from './store.js';
+import { resumen, fechaCorta } from './lib/calc.js';
+import Tablero from './pages/Tablero.jsx';
+import Programas from './pages/Programas.jsx';
+import Programa from './pages/Programa.jsx';
+import Fuentes from './pages/Fuentes.jsx';
+import Funcionamiento from './pages/Funcionamiento.jsx';
+import Importar from './pages/Importar.jsx';
+import Reporte from './pages/Reporte.jsx';
+import Metodologia from './pages/Metodologia.jsx';
 
-const STORAGE_KEY = 'semaforo-presupuestario:v1';
+const MENU = [
+  ['#/', 'Tablero general'],
+  ['#/programas', 'Programas'],
+  ['#/funcionamiento', 'Funcionamiento'],
+  ['#/fuentes', 'Fuentes'],
+  ['#/importar', 'Importar datos'],
+  ['#/reporte', 'Reporte'],
+  ['#/metodologia', 'Metodología'],
+];
 
-function App() {
-  const [datos, setDatos] = useLocalStorage(STORAGE_KEY, initialData);
-  const [gastoEnEdicion, setGastoEnEdicion] = useState(null);
+function useRuta() {
+  const [ruta, setRuta] = useState(() => window.location.hash || '#/');
+  useEffect(() => {
+    const f = () => {
+      setRuta(window.location.hash || '#/');
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('hashchange', f);
+    return () => window.removeEventListener('hashchange', f);
+  }, []);
+  return ruta;
+}
 
-  const estadoGlobal = useMemo(() => {
-    const { porcentaje } = calcularPorcentaje(datos);
-    return getEstadoSemaforo(porcentaje);
-  }, [datos]);
+export default function App() {
+  const ruta = useRuta();
+  const [datos, setDatos] = useState(cargarDatos);
+  const [params, setParams] = useState(cargarParametros);
+  const r = useMemo(() => resumen(datos.lineas, datos.meta.corte, params), [datos, params]);
 
-  const handleAgregarGasto = (nuevoGasto) => {
-    setDatos((prev) => ({ ...prev, gastos: [nuevoGasto, ...prev.gastos] }));
+  const ctx = {
+    datos, params, r,
+    usarDatos: (d) => { setDatos(d); return guardarDatos(d); },
+    restaurarDatos: () => { borrarDatos(); setDatos(datosOficiales); },
+    cambiarParametros: (p) => { setParams(p); guardarParametros(p); },
+    restaurarParametros: () => { borrarParametros(); setParams(cargarParametros()); },
   };
 
-  const handleEliminarGasto = (id) => {
-    setDatos((prev) => ({ ...prev, gastos: prev.gastos.filter((g) => g.id !== id) }));
-  };
+  const [base, sub] = ruta.replace(/^#\/?/, '').split('/');
+  let pagina;
+  if (!base) pagina = <Tablero {...ctx} />;
+  else if (base === 'programas' && sub) pagina = <Programa {...ctx} cod={decodeURIComponent(sub)} />;
+  else if (base === 'programas') pagina = <Programas {...ctx} />;
+  else if (base === 'funcionamiento') pagina = <Funcionamiento {...ctx} />;
+  else if (base === 'fuentes') pagina = <Fuentes {...ctx} />;
+  else if (base === 'importar') pagina = <Importar {...ctx} />;
+  else if (base === 'reporte') pagina = <Reporte {...ctx} />;
+  else if (base === 'metodologia') pagina = <Metodologia {...ctx} />;
+  else pagina = <Tablero {...ctx} />;
 
-  const handleGuardarEdicion = (gastoEditado) => {
-    setDatos((prev) => ({
-      ...prev,
-      gastos: prev.gastos.map((g) => (g.id === gastoEditado.id ? gastoEditado : g)),
-    }));
-    setGastoEnEdicion(null);
-  };
-
-  const handleActualizarIngreso = (nuevoIngreso) => {
-    setDatos((prev) => ({ ...prev, ingresoTotal: nuevoIngreso }));
-  };
-
-  const handleReiniciar = () => {
-    if (window.confirm('¿Reiniciar la app a los datos de ejemplo? Se perderán tus gastos guardados.')) {
-      setDatos(initialData);
-    }
-  };
+  const activo = (href) => (href === '#/' ? !base : href.slice(2) === base);
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Glow de bordes — debajo de todo, no captura clicks */}
-      <GlowOverlay glowRgba={estadoGlobal.glowRgba} estado={estadoGlobal.estado} />
-
-      {/* Contenido principal */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-        {/* Header */}
-        <header className="flex items-center justify-between mb-6 lg:mb-8">
-          <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">
-              🚦 Semáforo Presupuestario
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Control inteligente de tus finanzas mensuales
-            </p>
-          </div>
-          <button
-            onClick={handleReiniciar}
-            className="text-xs text-gray-500 hover:text-red-600 transition-colors hover:underline"
-            title="Borra todos los datos guardados y vuelve al ejemplo inicial"
-          >
-            Reiniciar datos
-          </button>
-        </header>
-
-        {/* Fila 1: Dashboard + Predicción */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 mb-4 lg:mb-6">
-          <div className="lg:col-span-5">
-            <Dashboard datos={datos} onActualizarIngreso={handleActualizarIngreso} />
-          </div>
-          <div className="lg:col-span-7">
-            <PrediccionRK datos={datos} />
-          </div>
+    <div className="app">
+      <a className="saltar" href="#contenido">Ir al contenido</a>
+      <nav className="menu" aria-label="Menú principal">
+        <a className="marca" href="#/">
+          <svg width="22" height="40" viewBox="0 0 22 40" aria-hidden="true">
+            <rect x="1" y="1" width="20" height="38" rx="10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="11" cy="10" r="4.5" fill="#E2614F" />
+            <circle cx="11" cy="20" r="4.5" fill="#E5A83B" />
+            <circle cx="11" cy="30" r="4.5" fill="#4CB37A" />
+          </svg>
+          <span>
+            <strong>Semáforo</strong>
+            <small>GAM General Saavedra</small>
+          </span>
+        </a>
+        <ul>
+          {MENU.map(([href, txt]) => (
+            <li key={href}>
+              <a href={href} aria-current={activo(href) ? 'page' : undefined}>{txt}</a>
+            </li>
+          ))}
+        </ul>
+        <div className="menu-pie">
+          <p>Corte de datos</p>
+          <strong>{fechaCorta(datos.meta.corte)}</strong>
+          <p>{datos.meta.oficial ? 'Datos oficiales cargados' : 'Datos importados en este navegador'}</p>
         </div>
-
-        {/* Fila 2: Formulario + Historial */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          <div className="lg:col-span-4">
-            <FormularioGasto
-              onAgregarGasto={handleAgregarGasto}
-              categorias={datos.categorias}
-            />
-          </div>
-          <div className="lg:col-span-8">
-            <HistorialGastos
-              datos={datos}
-              onEliminarGasto={handleEliminarGasto}
-              onEditarGasto={(gasto) => setGastoEnEdicion(gasto)}
-            />
-          </div>
-        </div>
-
-        {/* Footer discreto con la cita académica */}
-        <footer className="mt-10 pt-6 border-t border-gray-200/60 text-center">
-          <p className="text-[11px] text-gray-400 leading-relaxed">
-            Proyección estimada mediante integración numérica del{' '}
-            <span className="text-gray-500">método de Runge-Kutta de cuarto orden (RK4)</span>{' '}
-            aplicado a la tasa de gasto diaria observada.
-          </p>
-          <p className="text-[10px] text-gray-300 mt-1.5">
-            Los resultados son una proyección y pueden variar según tu comportamiento futuro.
-          </p>
+      </nav>
+      <main id="contenido" className="contenido">
+        {pagina}
+        <footer className="pie">
+          Piloto académico · Proyecto Integrador Intermedio II · Unifranz · Ingeniería de Sistemas y Contaduría Pública.
+          Datos: {datos.meta.fuente}, {datos.meta.archivo}.
         </footer>
-      </div>
-
-      {gastoEnEdicion && (
-        <EditarGastoModal
-          gasto={gastoEnEdicion}
-          categorias={datos.categorias}
-          onGuardar={handleGuardarEdicion}
-          onCerrar={() => setGastoEnEdicion(null)}
-        />
-      )}
+      </main>
     </div>
   );
 }
-
-export default App;
