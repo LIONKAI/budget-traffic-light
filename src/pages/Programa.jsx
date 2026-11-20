@@ -87,7 +87,7 @@ export default function Programa({ r, cod, params }) {
                     <td>{g.clave}0000 · {g.nombre}</td>
                     <td className="num">{bs(g.vigente)}</td>
                     <td className="num">{pct(g.pct)}</td>
-                    <td><Estado estado={g.estado} /></td>
+                    <td><Estado estado={g.estado} sentido={g.sentido} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -131,7 +131,7 @@ export default function Programa({ r, cod, params }) {
                           <span className="num">{pct(a.pct)}</span>
                         </div>
                       </td>
-                      <td><Estado estado={a.estado} /></td>
+                      <td><Estado estado={a.estado} sentido={a.sentido} /></td>
                       <td className="tenue">{a.tipo === 'Proyecto' ? 'Sin reporte' : 'No aplica'}</td>
                     </tr>
                     {abierta && (
@@ -161,7 +161,7 @@ export default function Programa({ r, cod, params }) {
             </tbody>
           </table>
         </div>
-        <Fuente>“Ejecutado” = apertura con {pct(params.ejecutadoDesde)} o más devengado. El avance físico se completa cuando las unidades ejecutoras lo reporten (indicador S4).</Fuente>
+        <Fuente>Proyecto con {pct(params.ejecutadoDesde)} o más devengado = “Ejecutado”; actividad en esa situación antes de diciembre = “Agotado” (se quedó sin presupuesto). El avance físico se completa cuando las unidades ejecutoras lo reporten (indicador S4).</Fuente>
       </Seccion>
     </>
   );

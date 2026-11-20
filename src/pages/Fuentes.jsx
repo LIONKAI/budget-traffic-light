@@ -51,7 +51,7 @@ export default function Fuentes({ datos, r, params }) {
                       <span className="num">{pct(f.pct)}</span>
                     </div>
                   </td>
-                  <td><Estado estado={f.estado} /></td>
+                  <td><Estado estado={f.estado} sentido={f.sentido} /></td>
                 </tr>
               ))}
             </tbody>

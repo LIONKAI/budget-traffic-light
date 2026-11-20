@@ -42,7 +42,7 @@ export default function Reporte({ datos, r, params }) {
           <tr><td>S4 · Avance físico-financiero</td><td>Falta el reporte de avance físico</td><td><Estado estado="sinDato" /></td></tr>
         </tbody>
       </table>
-      <p className="nota">Base del límite S1: {params.fuenteBase} (Bs {bs(r.s1.base)}). Distribución de aperturas: {['rojo', 'amarillo', 'verde', 'ejecutado'].map((k) => `${r.dist[k].n} ${ETIQUETA[k].toLowerCase()}`).join(', ')}.</p>
+      <p className="nota">Base del límite S1: {params.fuenteBase} (Bs {bs(r.s1.base)}). Distribución de aperturas: {['rojo', 'agotado', 'amarillo', 'verde', 'ejecutado'].map((k) => `${r.dist[k].n} ${ETIQUETA[k].toLowerCase()}`).join(', ')}.</p>
 
       <h2>3. Ejecución por programa</h2>
       <table>
@@ -54,7 +54,7 @@ export default function Reporte({ datos, r, params }) {
               <td className="num">{bs(p.vigente)}</td>
               <td className="num">{bs(p.devengado)}</td>
               <td className="num">{pct(p.pct)}</td>
-              <td><Estado estado={p.estado} /></td>
+              <td><Estado estado={p.estado} sentido={p.sentido} /></td>
             </tr>
           ))}
         </tbody>
@@ -71,10 +71,22 @@ export default function Reporte({ datos, r, params }) {
         </tbody>
       </table>
 
-      <h2>5. Notas</h2>
+      <h2>5. Partidas con presupuesto agotado</h2>
+      <p>{r.partidasAgotadas.length} partidas de actividades (al menos Bs 10.000) ya devengaron todo su vigente antes de fin de año. Revisar si el gasto continúa hasta diciembre.</p>
+      <table>
+        <thead><tr><th>Partida</th><th>Actividad</th><th>Programa</th><th className="num">Vigente (Bs)</th></tr></thead>
+        <tbody>
+          {r.partidasAgotadas.map((l, i) => (
+            <tr key={i}><td>{l.obj} · {l.objDesc}</td><td>{l.apertura}</td><td>{l.prog}</td><td className="num">{bs(l.vigente)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2>6. Notas</h2>
       <ul>
         <li>Fuente: {datos.meta.fuente}, archivo {datos.meta.archivo}.</li>
         <li>El avance esperado supone un gasto lineal durante el año, a falta de una programación mensual.</li>
+        <li>Una actividad al 100 % antes de diciembre se marca como Agotado (alerta); un proyecto al 100 %, como Ejecutado.</li>
         <li>Rangos de S2: verde entre {params.s2.verdeMin} % y {params.s2.verdeMax} % del ritmo esperado; amarillo entre {params.s2.amarilloMin} % y {params.s2.amarilloMax} %; rojo fuera de esos rangos.</li>
         <li>Piloto académico elaborado por Ingeniería de Sistemas y Contaduría Pública, Unifranz.</li>
       </ul>

@@ -80,7 +80,7 @@ export default function Programas({ datos, r }) {
                     </div>
                   </td>
                   <td className="num">{pct(p.ritmo)}</td>
-                  <td><Estado estado={p.estado} /></td>
+                  <td><Estado estado={p.estado} sentido={p.sentido} /></td>
                 </tr>
               ))}
               {!lista.length && (

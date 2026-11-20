@@ -9,13 +9,15 @@ import Funcionamiento from './pages/Funcionamiento.jsx';
 import Importar from './pages/Importar.jsx';
 import Reporte from './pages/Reporte.jsx';
 import Metodologia from './pages/Metodologia.jsx';
+import Login from './pages/Login.jsx';
+import { sesionActual, cerrarSesion, puede, ROLES } from './auth.js';
 
 const MENU = [
   ['#/', 'Tablero general'],
   ['#/programas', 'Programas'],
   ['#/funcionamiento', 'Funcionamiento'],
   ['#/fuentes', 'Fuentes'],
-  ['#/importar', 'Importar datos'],
+  ['#/importar', 'Importar datos', 'importar'],
   ['#/reporte', 'Reporte'],
   ['#/metodologia', 'Metodología'],
 ];
@@ -34,13 +36,20 @@ function useRuta() {
 }
 
 export default function App() {
+  const [sesion, setSesion] = useState(sesionActual);
+  if (!sesion) return <Login onEntrar={setSesion} />;
+  return <Sistema sesion={sesion} salir={() => { cerrarSesion(); setSesion(null); window.location.hash = '#/'; }} />;
+}
+
+function Sistema({ sesion, salir }) {
   const ruta = useRuta();
   const [datos, setDatos] = useState(cargarDatos);
   const [params, setParams] = useState(cargarParametros);
   const r = useMemo(() => resumen(datos.lineas, datos.meta.corte, params), [datos, params]);
 
   const ctx = {
-    datos, params, r,
+    datos, params, r, sesion,
+    puede: (permiso) => puede(sesion, permiso),
     usarDatos: (d) => { setDatos(d); return guardarDatos(d); },
     restaurarDatos: () => { borrarDatos(); setDatos(datosOficiales); },
     cambiarParametros: (p) => { setParams(p); guardarParametros(p); },
@@ -54,7 +63,7 @@ export default function App() {
   else if (base === 'programas') pagina = <Programas {...ctx} />;
   else if (base === 'funcionamiento') pagina = <Funcionamiento {...ctx} />;
   else if (base === 'fuentes') pagina = <Fuentes {...ctx} />;
-  else if (base === 'importar') pagina = <Importar {...ctx} />;
+  else if (base === 'importar') pagina = puede(sesion, 'importar') ? <Importar {...ctx} /> : <SinPermiso />;
   else if (base === 'reporte') pagina = <Reporte {...ctx} />;
   else if (base === 'metodologia') pagina = <Metodologia {...ctx} />;
   else pagina = <Tablero {...ctx} />;
@@ -78,12 +87,17 @@ export default function App() {
           </span>
         </a>
         <ul>
-          {MENU.map(([href, txt]) => (
+          {MENU.filter(([, , permiso]) => !permiso || puede(sesion, permiso)).map(([href, txt]) => (
             <li key={href}>
               <a href={href} aria-current={activo(href) ? 'page' : undefined}>{txt}</a>
             </li>
           ))}
         </ul>
+        <div className="menu-usuario">
+          <p>{sesion.nombre}</p>
+          <small>{ROLES[sesion.rol].nombre}</small>
+          <button type="button" onClick={salir}>Cerrar sesión</button>
+        </div>
         <div className="menu-pie">
           <p>Corte de datos</p>
           <strong>{fechaCorta(datos.meta.corte)}</strong>
@@ -98,5 +112,17 @@ export default function App() {
         </footer>
       </main>
     </div>
+  );
+}
+
+function SinPermiso() {
+  return (
+    <header className="cab">
+      <div>
+        <p className="ante"><a href="#/">Tablero</a></p>
+        <h1>Esta sección es solo para el rol Administrador</h1>
+        <p className="sub">Tu usuario tiene permiso de consulta. Pide a la Dirección de Finanzas que cargue los datos.</p>
+      </div>
+    </header>
   );
 }

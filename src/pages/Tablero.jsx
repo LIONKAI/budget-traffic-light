@@ -45,9 +45,10 @@ export default function Tablero({ datos, r, params }) {
         </div>
       </Seccion>
 
-      <div className="grid-4">
+      <div className="grid-conteos">
         {[
           ['rojo', 'en rojo'],
+          ['agotado', 'con presupuesto agotado'],
           ['amarillo', 'en amarillo'],
           ['verde', 'en verde'],
           ['ejecutado', 'ya ejecutadas'],
@@ -55,7 +56,7 @@ export default function Tablero({ datos, r, params }) {
           <div key={k} className="conteo">
             <span className={`punto-grande fondo-${k}`} aria-hidden="true" />
             <div>
-              <p className="conteo-n">{r.dist[k].n} aperturas {t}</p>
+              <p className="conteo-n">{r.dist[k].n} {r.dist[k].n === 1 ? 'apertura' : 'aperturas'} {t}</p>
               <p className="conteo-v">Bs {mill(r.dist[k].v)} del vigente</p>
             </div>
           </div>
@@ -86,6 +87,31 @@ export default function Tablero({ datos, r, params }) {
         </Seccion>
       )}
 
+      {r.partidasAgotadas.length > 0 && (
+        <Seccion titulo={`${r.partidasAgotadas.length} partidas ya agotaron su presupuesto antes de fin de año`}>
+          <p className="texto">Partidas de actividades (gasto recurrente) con al menos Bs 10.000 que ya devengaron todo su vigente. Si el gasto sigue en noviembre y diciembre, necesitarán un traspaso o reformulación. Si era un gasto de una sola vez, es normal: revisar caso por caso.</p>
+          <div className="tabla-caja">
+            <table>
+              <thead>
+                <tr><th>Partida</th><th>Actividad</th><th>Programa</th><th className="num">Vigente (Bs)</th><th className="num">% devengado</th></tr>
+              </thead>
+              <tbody>
+                {r.partidasAgotadas.slice(0, 8).map((l, i) => (
+                  <tr key={i}>
+                    <td>{l.obj} · {l.objDesc}</td>
+                    <td>{l.apertura}</td>
+                    <td><a href={`#/programas/${l.prog}`}>{l.prog} · {nombrePrograma(l.prog)}</a></td>
+                    <td className="num">{bs(l.vigente)}</td>
+                    <td className="num">{pct((l.devengado / l.vigente) * 100)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {r.partidasAgotadas.length > 8 && <Fuente>Se muestran 8 de {r.partidasAgotadas.length}. La lista completa está en el reporte.</Fuente>}
+        </Seccion>
+      )}
+
       <Seccion titulo="Los 10 programas con mayor presupuesto" accion={<a href="#/programas">Ver los {r.programas.length} programas</a>}>
         <div className="tabla-caja">
           <table>
@@ -110,7 +136,7 @@ export default function Tablero({ datos, r, params }) {
                       <span className="num">{pct(p.pct)}</span>
                     </div>
                   </td>
-                  <td><Estado estado={p.estado} /></td>
+                  <td><Estado estado={p.estado} sentido={p.sentido} /></td>
                 </tr>
               ))}
             </tbody>

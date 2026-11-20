@@ -264,3 +264,28 @@ legend { font-size: 13px; font-weight: 600; padding: 0 6px; }
   tr { break-inside: avoid; }
   .estado { border: 1px solid currentColor; }
 }
+
+/* Estado agotado: alerta roja con borde marcado */
+.estado-agotado { background: var(--rojo-fondo); color: var(--rojo-texto); box-shadow: inset 0 0 0 1px var(--rojo); }
+.fondo-agotado { background: var(--rojo); box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--rojo); }
+.grid-conteos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+
+/* Usuario en el menú */
+.menu-usuario { padding: 12px; border-top: 1px solid #2B3B33; margin-top: auto; font-size: 13px; }
+.menu-usuario p { color: #fff; font-weight: 600; }
+.menu-usuario small { display: block; color: #B7C6BD; margin-bottom: 8px; }
+.menu-usuario button { font: inherit; font-size: 13px; color: #E7EEE9; background: none; border: 1px solid #3A4C43; border-radius: 6px; padding: 8px 12px; min-height: 36px; cursor: pointer; }
+.menu-usuario button:hover { border-color: #E7EEE9; }
+.menu-usuario + .menu-pie { margin-top: 0; }
+
+/* Inicio de sesión */
+.login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--fondo); }
+.login-caja { width: 100%; max-width: 420px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 28px; display: grid; gap: 20px; }
+.login-marca { display: flex; gap: 14px; align-items: center; }
+.login-marca h1 { font-size: 22px; font-weight: 800; }
+.login-marca p { font-size: 13px; color: var(--tenue); }
+.login .formulario { margin: 0; }
+.login .formulario input { max-width: none; }
+.login-nota { font-size: 13px; background: #F8FAF8; border: 1px solid var(--borde); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; }
+.login-nota code { background: #EEF1EF; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+@media (max-width: 860px) { .menu-usuario { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0 0; } .menu-usuario small { margin: 0; } }

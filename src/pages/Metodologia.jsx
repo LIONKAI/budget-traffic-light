@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Seccion, Fuente } from '../ui.jsx';
 
-export default function Metodologia({ params, cambiarParametros, restaurarParametros }) {
+export default function Metodologia({ params, cambiarParametros, restaurarParametros, puede }) {
   const [s2, setS2] = useState(params.s2);
   const [s1, setS1] = useState(params.s1);
   const [ejec, setEjec] = useState(params.ejecutadoDesde);
@@ -50,7 +50,14 @@ export default function Metodologia({ params, cambiarParametros, restaurarParame
       </Seccion>
 
       <Seccion titulo="Umbrales (a validar por Contaduría)">
-        <form className="formulario" onSubmit={guardar}>
+        {!puede('editarUmbrales') && (
+          <ul className="lista">
+            <li>S2 verde: ritmo entre {params.s2.verdeMin} % y {params.s2.verdeMax} %. Amarillo: entre {params.s2.amarilloMin} % y {params.s2.verdeMin} %, o entre {params.s2.verdeMax} % y {params.s2.amarilloMax} %. Rojo: fuera de esos rangos.</li>
+            <li>S1 amarillo desde {params.s1.amarillo} % del límite; rojo sobre {params.s1.rojo} %.</li>
+            <li>Apertura ejecutada o agotada desde {params.ejecutadoDesde} % devengado. Solo el rol Administrador puede cambiar estos valores.</li>
+          </ul>
+        )}
+        {puede('editarUmbrales') && <form className="formulario" onSubmit={guardar}>
           <fieldset>
             <legend>S2 · ritmo de ejecución (% del ritmo esperado)</legend>
             <div className="grid-4">
@@ -75,13 +82,14 @@ export default function Metodologia({ params, cambiarParametros, restaurarParame
             <button className="boton secundario" type="button" onClick={() => { restaurarParametros(); setMsg('Se restauraron los valores propuestos.'); window.location.reload(); }}>Restaurar valores propuestos</button>
           </div>
           {msg && <p role="status" className="ok">{msg}</p>}
-        </form>
+        </form>}
       </Seccion>
 
       <Seccion titulo="Alcance de este piloto">
         <ul className="lista">
           <li>Funciona con datos reales del SIGEP y valida que los totales cuadren antes de usarlos.</li>
           <li>No tiene usuarios ni base de datos en servidor: los datos importados y los umbrales se guardan solo en el navegador donde se cargan.</li>
+          <li>Colores con sentido: “Rojo · atrasado” es gasto por debajo del ritmo; “Rojo · adelantado”, gasto por encima. Una actividad recurrente al 100 % antes de diciembre se marca “Agotado” porque se quedó sin presupuesto; un proyecto al 100 % se marca “Ejecutado”.</li>
           <li>El ritmo esperado supone un gasto lineal a lo largo del año, porque todavía no hay programación mensual.</li>
           <li>Para uso continuo en el municipio corresponde la versión completa descrita en la propuesta técnica (usuarios, base de datos, alertas y bitácora).</li>
         </ul>

@@ -1,11 +1,12 @@
 import React from 'react';
 import { ETIQUETA, pct } from './lib/calc.js';
 
-export function Estado({ estado, texto }) {
+export function Estado({ estado, texto, sentido }) {
+  const base = texto || ETIQUETA[estado] || estado;
   return (
     <span className={`estado estado-${estado}`}>
       <span className="punto" aria-hidden="true" />
-      {texto || ETIQUETA[estado] || estado}
+      {sentido && !texto ? `${base} · ${sentido}` : base}
     </span>
   );
 }
@@ -35,7 +36,7 @@ export function Semaforo({ codigo, nombre, estado, detalle, nota }) {
   return (
     <div className={`sem sem-${estado}`}>
       <div className="sem-luz" aria-hidden="true">
-        <span className={estado === 'rojo' ? 'on rojo' : ''} />
+        <span className={estado === 'rojo' || estado === 'agotado' ? 'on rojo' : ''} />
         <span className={estado === 'amarillo' ? 'on amarillo' : ''} />
         <span className={estado === 'verde' ? 'on verde' : ''} />
       </div>

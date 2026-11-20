@@ -85,16 +85,23 @@ export function agrupar(lineas, claveFn) {
 }
 
 /** Estado S2 de un conjunto: compara % ejecutado con % esperado a la fecha. */
-export function estadoS2(vigente, devengado, fraccion, p) {
-  if (vigente <= 0) return { estado: 'sinPresupuesto', pct: 0, ritmo: 0 };
+// tipo: 'Proyecto' | 'Actividad' | undefined (conjuntos: programa, fuente, total)
+export function estadoS2(vigente, devengado, fraccion, p, tipo) {
+  if (vigente <= 0) return { estado: 'sinPresupuesto', pct: 0, ritmo: 0, sentido: '' };
   const pct = (devengado / vigente) * 100;
   const ritmo = pct / fraccion; // 100 = va exactamente al ritmo esperado
-  if (pct >= p.ejecutadoDesde) return { estado: 'ejecutado', pct, ritmo };
+  if (pct >= p.ejecutadoDesde) {
+    // Una actividad recurrente (sueldos, combustible...) que ya gastó todo antes de fin de año
+    // se quedó sin presupuesto: es una alerta. Un proyecto al 100 % simplemente terminó.
+    if (tipo === 'Actividad' && fraccion < 1) return { estado: 'agotado', pct, ritmo, sentido: '' };
+    return { estado: 'ejecutado', pct, ritmo, sentido: '' };
+  }
   const { verdeMin, verdeMax, amarilloMin, amarilloMax } = p.s2;
   let estado = 'rojo';
   if (ritmo >= verdeMin && ritmo <= verdeMax) estado = 'verde';
   else if ((ritmo >= amarilloMin && ritmo < verdeMin) || (ritmo > verdeMax && ritmo <= amarilloMax)) estado = 'amarillo';
-  return { estado, pct, ritmo };
+  const sentido = ritmo < verdeMin ? 'atrasado' : ritmo > verdeMax ? 'adelantado' : '';
+  return { estado, pct, ritmo, sentido };
 }
 
 /** Estado global de S2 (sin la regla de "ejecutado"). */
@@ -115,6 +122,7 @@ export const ETIQUETA = {
   amarillo: 'Amarillo',
   rojo: 'Rojo',
   ejecutado: 'Ejecutado',
+  agotado: 'Agotado',
   sinPresupuesto: 'Sin presupuesto',
   sinDato: 'Sin dato',
 };
@@ -135,10 +143,10 @@ export function resumen(lineas, corte, p) {
       prog: a.lineas[0].prog,
       nombre: a.lineas[0].apertura,
       tipo: a.lineas[0].tipo,
-      ...estadoS2(a.vigente, a.devengado, f, p),
+      ...estadoS2(a.vigente, a.devengado, f, p, a.lineas[0].tipo),
     }));
 
-  const dist = { rojo: { n: 0, v: 0 }, amarillo: { n: 0, v: 0 }, verde: { n: 0, v: 0 }, ejecutado: { n: 0, v: 0 } };
+  const dist = { rojo: { n: 0, v: 0 }, agotado: { n: 0, v: 0 }, amarillo: { n: 0, v: 0 }, verde: { n: 0, v: 0 }, ejecutado: { n: 0, v: 0 } };
   aperturas.forEach((a) => { if (dist[a.estado]) { dist[a.estado].n += 1; dist[a.estado].v += a.vigente; } });
 
   const programas = agrupar(lineas, (l) => l.prog)
@@ -162,7 +170,15 @@ export function resumen(lineas, corte, p) {
     .filter((a) => a.devengado === 0 && a.vigente >= 50000)
     .sort((a, b) => b.vigente - a.vigente);
 
+  // Partidas de actividades que ya consumieron todo su presupuesto antes de fin de año
+  const partidasAgotadas = f < 1
+    ? lineas
+      .filter((l) => l.tipo === 'Actividad' && l.vigente >= 10000 && (l.devengado / l.vigente) * 100 >= p.ejecutadoDesde)
+      .sort((a, b) => b.vigente - a.vigente)
+    : [];
+
   return {
+    partidasAgotadas,
     fraccion: f, vigente, devengado, pagado, inicial, modificaciones, s2,
     aperturas, dist, programas, func, funcVigente, funcDevengado, s1, sinEjecucion,
   };

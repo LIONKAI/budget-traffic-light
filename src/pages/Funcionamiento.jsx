@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Barra, Estado, Kpi, Seccion, Fuente } from '../ui.jsx';
 import { agrupar, bs, mill, pct, GRUPOS, FUNCIONAMIENTO_POA, estadoS2Global } from '../lib/calc.js';
 
-export default function Funcionamiento({ r, params, cambiarParametros }) {
+export default function Funcionamiento({ r, params, cambiarParametros, puede }) {
   const [propios, setPropios] = useState(params.baseIngresosPropios);
   const [copa, setCopa] = useState(params.baseCoparticipacion);
   const [fuenteBase, setFuenteBase] = useState(params.fuenteBase);
@@ -79,7 +79,7 @@ export default function Funcionamiento({ r, params, cambiarParametros }) {
                     <td className="num">{bs(o.vigente)}</td>
                     <td className="num">{bs(o.devengado)}</td>
                     <td className="num">{pct(o.pct)}</td>
-                    <td><Estado estado={o.estado} /></td>
+                    <td><Estado estado={o.estado} sentido={o.sentido} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -109,7 +109,8 @@ export default function Funcionamiento({ r, params, cambiarParametros }) {
 
       <Seccion titulo="Base de cálculo del límite">
         <p className="texto">Por defecto se usan los ingresos programados en el POA 2026. Cuando el municipio entregue la ejecución de recursos, reemplázalos por lo recaudado o por la proyección al cierre.</p>
-        <form className="formulario" onSubmit={guardar}>
+        {!puede('editarBase') && <p className="texto"><strong>Base actual:</strong> ingresos propios Bs {bs(params.baseIngresosPropios)} + coparticipación Bs {bs(params.baseCoparticipacion)} ({params.fuenteBase}). Solo el rol Administrador puede cambiarla.</p>}
+        {puede('editarBase') && <form className="formulario" onSubmit={guardar}>
           <label>Ingresos propios (Bs)
             <input type="number" min="0" step="1" value={propios} onChange={(e) => setPropios(e.target.value)} />
           </label>
@@ -123,7 +124,7 @@ export default function Funcionamiento({ r, params, cambiarParametros }) {
             <button className="boton" type="submit">Recalcular límite</button>
             {guardado && <span role="status" className="ok">Límite recalculado.</span>}
           </div>
-        </form>
+        </form>}
       </Seccion>
     </>
   );
